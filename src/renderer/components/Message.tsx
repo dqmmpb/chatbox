@@ -60,6 +60,7 @@ export default function Message(props: Props) {
         && (JSON.stringify(msg.content)).length > collapseThreshold
         && (JSON.stringify(msg.content)).length - collapseThreshold > 50
     const [isCollapsed, setIsCollapsed] = useState(needCollapse)
+    const [isReasoningCollapsed, setIsReasoningCollapsed] = useState(false)
 
     const ref = useRef<HTMLDivElement>(null)
 
@@ -112,6 +113,10 @@ export default function Message(props: Props) {
     if (needCollapse && isCollapsed) {
         content = msg.content.slice(0, collapseThreshold) + '... '
     }
+    let reasoning_content = msg.reasoning_content || ''
+    if (typeof msg.reasoning_content !== 'string') {
+        reasoning_content = JSON.stringify(msg.reasoning_content)
+    }
 
     const CollapseButton = (
         <span
@@ -119,6 +124,15 @@ export default function Message(props: Props) {
             onClick={() => setIsCollapsed(!isCollapsed)}
         >
             [{isCollapsed ? t('Expand') : t('Collapse')}]
+        </span>
+    )
+
+    const ReasoningCollapseButton = (
+        <span
+            className='cursor-pointer inline-block font-bold text-blue-500 hover:text-white hover:bg-blue-500'
+            onClick={() => setIsReasoningCollapsed(!isReasoningCollapsed)}
+        >
+            [{isReasoningCollapsed ? t('Expand') : t('Collapse')}]
         </span>
     )
 
@@ -203,6 +217,24 @@ export default function Message(props: Props) {
                         <Box className={cn('msg-content', { 'msg-content-small': small })} sx={
                             small ? { fontSize: theme.typography.body2.fontSize } : {}
                         }>
+                            {msg.reasoning_content !== undefined && (
+                                <div>
+                                    <div>{t('Thought')} {ReasoningCollapseButton}</div>
+                                    <Typography sx={{ opacity: 0.5, borderLeft: "2px solid #e5e5e5", paddingLeft: '1em'}}>
+                                        {
+                                            enableMarkdownRendering && !isReasoningCollapsed ? (
+                                                <Markdown>
+                                                    {reasoning_content}
+                                                </Markdown>
+                                            ) : !isReasoningCollapsed && (
+                                                <p>
+                                                    {reasoning_content}
+                                                </p>
+                                            )
+                                        }
+                                    </Typography>
+                                </div>
+                            )}
                             {
                                 enableMarkdownRendering && !isCollapsed ? (
                                     <Markdown>

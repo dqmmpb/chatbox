@@ -1,5 +1,5 @@
 import { ChatboxAILicenseDetail, ChatboxAIModel, Message, MessageRole } from 'src/shared/types'
-import Base, { onResultChange } from './base'
+import Base, { ChatCompletionResponse, onResultChange } from './base'
 import { API_ORIGIN } from '../remote'
 import { BaseError, ApiError, NetworkError, ChatboxAIAPIError } from './errors'
 import { parseJsonOrEmpty } from '@/lib/utils'
@@ -32,7 +32,7 @@ export default class ChatboxAI extends Base {
         this.config = config
     }
 
-    async callChatCompletion(rawMessages: Message[], signal?: AbortSignal, onResultChange?: onResultChange): Promise<string> {
+    async callChatCompletion(rawMessages: Message[], signal?: AbortSignal, onResultChange?: onResultChange): Promise<ChatCompletionResponse> {
         const messages = await populateChatboxAIMessage(rawMessages)
         const response = await this.post(
             `${API_ORIGIN}/api/ai/chat`,
@@ -47,7 +47,9 @@ export default class ChatboxAI extends Base {
             },
             signal
         )
-        let result = ''
+        let result: ChatCompletionResponse = {
+            content: '',
+        }
         await this.handleSSE(response, (message) => {
             if (message === '[DONE]') {
                 return
@@ -56,9 +58,9 @@ export default class ChatboxAI extends Base {
             if (data.error) {
                 throw new ApiError(`Error from Chatbox AI: ${JSON.stringify(data)}`)
             }
-            const word = data.choices[0]?.delta?.content
-            if (word !== undefined) {
-                result += word
+            const content = data.choices[0]?.delta?.content
+            if (content !== undefined) {
+                result.content += content
                 if (onResultChange) {
                     onResultChange(result)
                 }
@@ -167,7 +169,8 @@ export default class ChatboxAI extends Base {
 
 export interface ChatboxAIMessage {
     role: MessageRole
-    content: string
+    content?: string
+    reasoning_content?: string
     pictures?: {
         base64?: string
     }[]
@@ -182,6 +185,7 @@ export async function populateChatboxAIMessage(rawMessages: Message[]): Promise<
         const newMessage: ChatboxAIMessage = {
             role: raw.role,
             content: raw.content,
+            reasoning_content: raw.reasoning_content,
         }
         messages.push(newMessage)
     }

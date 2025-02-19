@@ -18,6 +18,7 @@ import { throttle } from 'lodash'
 import { countWord } from '@/packages/word-count'
 import { estimateTokensFromMessages } from '@/packages/token'
 import * as settingActions from './settingActions'
+import { ChatCompletionResponse } from '@/packages/models/base'
 
 export function create(newSession: Session) {
     const store = getDefaultStore()
@@ -202,8 +203,8 @@ export async function generate(sessionId: string, targetMsg: Message) {
             case 'chat':
             case undefined:
                 const promptMsgs = genMessageContext(settings, messages.slice(0, targetMsgIx))
-                const throttledModifyMessage = throttle(({ text, cancel }: { text: string, cancel: () => void }) => {
-                    targetMsg = { ...targetMsg, content: text, cancel }
+                const throttledModifyMessage = throttle(({ content, reasoning_content, cancel }: ChatCompletionResponse & { cancel: () => void }) => {
+                    targetMsg = { ...targetMsg, content: content, reasoning_content: reasoning_content, cancel }
                     modifyMessage(sessionId, targetMsg)
                 }, 100)
                 await model.chat(promptMsgs, throttledModifyMessage)
@@ -255,13 +256,13 @@ async function _generateName(sessionId: string, modifyName: (sessionId: string, 
     const configs = await platform.getConfig()
     try {
         const model = getModel(settings, configs)
-        let name = await model.chat(promptFormat.nameConversation(
-            session.messages
-                .filter(m => m.role !== 'system')
-                .slice(0, 4),
-            settings.language,
-        ),
-        )
+        let name = (await model.chat(promptFormat.nameConversation(
+                session.messages
+                    .filter(m => m.role !== 'system')
+                    .slice(0, 4),
+                settings.language,
+            ),
+        )).content
         name = name.replace(/['"“”]/g, '')
         name = name.slice(0, 10)
         modifyName(session.id, name)

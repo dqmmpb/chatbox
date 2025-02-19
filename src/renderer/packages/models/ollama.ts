@@ -1,5 +1,5 @@
 import { Message } from 'src/shared/types'
-import Base, { onResultChange } from './base'
+import Base, { ChatCompletionResponse, onResultChange } from './base'
 import { ApiError } from './errors'
 import { log } from 'console'
 
@@ -34,7 +34,7 @@ export default class Ollama extends Base {
         return host
     }
 
-    async callChatCompletion(rawMessages: Message[], signal?: AbortSignal, onResultChange?: onResultChange): Promise<string> {
+    async callChatCompletion(rawMessages: Message[], signal?: AbortSignal, onResultChange?: onResultChange): Promise<ChatCompletionResponse> {
         const messages = rawMessages.map(m => ({ role: m.role, content: m.content }))
         const res = await this.post(
             `${this.getHost()}/api/chat`,
@@ -49,30 +49,46 @@ export default class Ollama extends Base {
             },
             signal,
         )
-        let result = ''
+        let result: ChatCompletionResponse = {
+            content: '',
+        }
         await this.handleNdjson(res, (message) => {
             const data = JSON.parse(message)
             if (data['done']) {
                 return
             }
-            const word = data['message']?.['content']
-            if (! word) {
-                throw new ApiError(JSON.stringify(data))
+            const content = data['message']?.['content']
+            const reasoning_content = data['message']?.['reasoning_content']
+            // if (! content) {
+            //     throw new ApiError(JSON.stringify(data))
+            // }
+            if (content !== undefined) {
+                result.content += content
+                if (onResultChange) {
+                    onResultChange(result)
+                }
             }
-            result += word
-            if (onResultChange) {
-                onResultChange(result)
+            if (reasoning_content !== undefined) {
+                result.reasoning_content = result.reasoning_content || ''
+                result.reasoning_content += reasoning_content
+                if (onResultChange) {
+                    onResultChange(result)
+                }
             }
         })
         return result
     }
 
     async listModels(): Promise<string[]> {
-        const res = await this.get(`${this.getHost()}/api/tags`, {})
-        const json = await res.json()
-        if (! json['models']) {
-            throw new ApiError(JSON.stringify(json))
+        try {
+            const res = await this.get(`${this.getHost()}/api/tags`, {})
+            const json = await res.json()
+            if (!json['models']) {
+                throw new ApiError(JSON.stringify(json))
+            }
+            return json['models'].map((m: any) => m['name'])
+        } catch(e: any) {
+            throw new ApiError(e?.message)
         }
-        return json['models'].map((m: any) => m['name'])
     }
 }

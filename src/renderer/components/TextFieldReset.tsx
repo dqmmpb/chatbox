@@ -1,6 +1,7 @@
 import React from 'react'
 import { TextField, Button } from '@mui/material'
 import { useTranslation } from 'react-i18next'
+import _ from 'lodash'
 
 export default function TextFieldReset(props: {
     defaultValue?: string
@@ -15,7 +16,7 @@ export default function TextFieldReset(props: {
     }
     return (
         <TextField
-            {...props}
+            {..._.omit(props, ['defaultValue', 'onValueChange'])}
             onChange={(e) => props.onValueChange(e.target.value)}
             InputProps={
                 defaultValue === props.value

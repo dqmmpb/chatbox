@@ -1,5 +1,5 @@
 import { Message } from 'src/shared/types'
-import Base, { onResultChange } from './base'
+import Base, { ChatCompletionResponse, onResultChange } from './base'
 import { ApiError } from './errors'
 
 // import LMStudio from 'LMStudio/browser'
@@ -34,7 +34,7 @@ export default class LMStudio extends Base {
         return host
     }
 
-    async callChatCompletion(rawMessages: Message[], signal?: AbortSignal, onResultChange?: onResultChange): Promise<string> {
+    async callChatCompletion(rawMessages: Message[], signal?: AbortSignal, onResultChange?: onResultChange): Promise<ChatCompletionResponse> {
         const messages = rawMessages.map(m => ({ role: m.role, content: m.content }))
         const res = await this.post(
             `${this.getHost()}/v1/chat/completions`,
@@ -44,11 +44,12 @@ export default class LMStudio extends Base {
                 model: this.options.lmStudioModel,
                 temperature: this.options.temperature,
                 stream: true,
-                
             },
             signal,
         )
-        let result = ''
+        let result: ChatCompletionResponse = {
+            content: '',
+        }
         await this.handleSSE(res, (message) => {
             if (message === '[DONE]') {
                 return
@@ -57,9 +58,9 @@ export default class LMStudio extends Base {
             if (data.error) {
                 throw new ApiError(`Error from LMSdudio: ${JSON.stringify(data)}`)
             }
-            const text = data.choices[0]?.delta?.content
-            if (text !== undefined) {
-                result += text
+            const content = data.choices[0]?.delta?.content
+            if (content !== undefined) {
+                result.content += content
                 if (onResultChange) {
                     onResultChange(result)
                 }

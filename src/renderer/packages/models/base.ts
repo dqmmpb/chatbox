@@ -3,36 +3,44 @@ import { ApiError, NetworkError, AIProviderNoImplementedPaintError, BaseError, A
 import { createParser } from 'eventsource-parser'
 import _ from 'lodash'
 
+
+export interface ChatCompletionResponse {
+    content: string
+    reasoning_content?: string
+}
+
 export default class Base {
     public name = 'Unknown'
 
     constructor() {
     }
 
-    async callChatCompletion(messages: Message[], signal?: AbortSignal, onResultChange?: onResultChange): Promise<string> {
+    async callChatCompletion(messages: Message[], signal?: AbortSignal, onResultChange?: onResultChange): Promise<ChatCompletionResponse> {
         throw new AIProviderNoImplementedChatError(this.name)
     }
 
-    async chat(messages: Message[], onResultUpdated?: (data: { text: string, cancel(): void }) => void): Promise<string> {
+    async chat(messages: Message[], onResultUpdated?: (data: ChatCompletionResponse & { cancel(): void }) => void): Promise<ChatCompletionResponse> {
         messages = await this.preprocessMessage(messages)
         return await this._chat(messages, onResultUpdated)
     }
 
-    protected async _chat(messages: Message[], onResultUpdated?: (data: { text: string, cancel(): void }) => void): Promise<string> {
+    protected async _chat(messages: Message[], onResultUpdated?: (data: ChatCompletionResponse & { cancel(): void }) => void): Promise<ChatCompletionResponse> {
         let canceled = false
         const controller = new AbortController()
         const stop = () => {
             canceled = true
             controller.abort()
         }
-        let result = ''
+        let result: ChatCompletionResponse = {
+            content: '',
+        }
         try {
             let onResultChange: onResultChange | undefined = undefined
             if (onResultUpdated) {
-                onResultUpdated({ text: result, cancel: stop })
-                onResultChange = (newResult: string) => {
+                onResultUpdated({ content: result.content, reasoning_content: result?.reasoning_content, cancel: stop })
+                onResultChange = (newResult: ChatCompletionResponse) => {
                     result = newResult
-                    onResultUpdated({ text: result, cancel: stop })
+                    onResultUpdated({ content: result.content, reasoning_content: result?.reasoning_content, cancel: stop })
                 }
             }
             result = await this.callChatCompletion(messages, controller.signal, onResultChange)
@@ -186,4 +194,4 @@ export default class Base {
     }
 }
 
-export type onResultChange = (result: string) => void
+export type onResultChange = (result: ChatCompletionResponse) => void

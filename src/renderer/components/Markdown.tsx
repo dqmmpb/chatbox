@@ -73,6 +73,27 @@ export function CodeBlock(props: any) {
                 </code>
             )
         }
+        // @ts-ignore
+        const renderSyntaxHighlighter = <SyntaxHighlighter
+            children={String(children).replace(/\n$/, '')}
+            style={
+                theme.palette.mode === 'dark'
+                    ? atomDark
+                    : a11yDark
+            }
+            language={language}
+            PreTag="div"
+            customStyle={{
+                marginTop: '0',
+                margin: '0',
+                borderTopLeftRadius: '0',
+                borderTopRightRadius: '0',
+                borderBottomLeftRadius: '0.3rem',
+                borderBottomRightRadius: '0.3rem',
+                border: 'none',
+            }}
+        />
+
         return (
             <div>
                 <div
@@ -122,25 +143,7 @@ export function CodeBlock(props: any) {
                         )
                     }
                 </div>
-                <SyntaxHighlighter
-                    children={String(children).replace(/\n$/, '')}
-                    style={
-                        theme.palette.mode === 'dark'
-                            ? atomDark
-                            : a11yDark
-                    }
-                    language={language}
-                    PreTag="div"
-                    customStyle={{
-                        marginTop: '0',
-                        margin: '0',
-                        borderTopLeftRadius: '0',
-                        borderTopRightRadius: '0',
-                        borderBottomLeftRadius: '0.3rem',
-                        borderBottomRightRadius: '0.3rem',
-                        border: 'none',
-                    }}
-                />
+                {renderSyntaxHighlighter}
             </div>
         )
     }, [props.children, theme.palette.mode])

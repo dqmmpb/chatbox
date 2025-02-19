@@ -1,5 +1,5 @@
 import { Message } from 'src/shared/types'
-import Base, { onResultChange } from './base'
+import Base, { ChatCompletionResponse, onResultChange } from './base'
 import { ApiError } from './errors'
 import { get } from 'lodash'
 
@@ -82,7 +82,7 @@ export default class Claude extends Base {
         rawMessages: Message[],
         signal?: AbortSignal,
         onResultChange?: onResultChange
-    ): Promise<string> {
+    ): Promise<ChatCompletionResponse> {
         rawMessages = this.sequenceMessages(rawMessages)
         let prompt = ''
         const messages: ClaudeMessage[] = []
@@ -120,15 +120,17 @@ export default class Claude extends Base {
             },
             signal
         )
-        let result = ''
+        let result: ChatCompletionResponse = {
+            content: '',
+        }
         await this.handleSSE(response, (message) => {
             const data = JSON.parse(message)
             if (data.error) {
                 throw new ApiError(`Error from Claude: ${JSON.stringify(data)}`)
             }
-            const word: string = get(data, 'delta.text', '')
-            if (word) {
-                result += word
+            const content: string = get(data, 'delta.text', '')
+            if (content) {
+                result.content += content
                 if (onResultChange) {
                     onResultChange(result)
                 }

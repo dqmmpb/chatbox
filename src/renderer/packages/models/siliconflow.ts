@@ -1,6 +1,6 @@
 import { Message } from 'src/shared/types'
 import { ApiError, ChatboxAIAPIError } from './errors'
-import Base, { onResultChange } from './base'
+import Base, { ChatCompletionResponse, onResultChange } from './base'
 
 interface Options {
     siliconCloudKey: string
@@ -26,7 +26,7 @@ export default class SiliconFlow extends Base {
         rawMessages: Message[],
         signal?: AbortSignal,
         onResultChange?: onResultChange
-    ): Promise<string> {
+    ): Promise<ChatCompletionResponse> {
         try {
             return await this._callChatCompletion(rawMessages, signal, onResultChange)
         } catch (e) {
@@ -44,7 +44,7 @@ export default class SiliconFlow extends Base {
         rawMessages: Message[],
         signal?: AbortSignal,
         onResultChange?: onResultChange
-    ): Promise<string> {
+    ): Promise<ChatCompletionResponse> {
         let messages = await populateSiliconFlowMessage(rawMessages, this.options.siliconCloudModel)
 
         const model =
@@ -67,7 +67,9 @@ export default class SiliconFlow extends Base {
             },
             signal
         )
-        let result = ''
+        let result: ChatCompletionResponse = {
+            content: '',
+        }
         await this.handleSSE(response, (message) => {
             if (message === '[DONE]') {
                 return
@@ -76,9 +78,17 @@ export default class SiliconFlow extends Base {
             if (data.error) {
                 throw new ApiError(`Error from SiliconFlow: ${JSON.stringify(data)}`)
             }
-            const text = data.choices[0]?.delta?.content
-            if (text !== undefined) {
-                result += text
+            const content = data.choices[0]?.delta?.content
+            const reasoning_content = data.choices[0]?.delta?.reasoning_content
+            if (content !== undefined) {
+                result.content += content
+                if (onResultChange) {
+                    onResultChange(result)
+                }
+            }
+            if (reasoning_content !== undefined) {
+                result.reasoning_content = result.reasoning_content || ''
+                result.reasoning_content += reasoning_content
                 if (onResultChange) {
                     onResultChange(result)
                 }

@@ -56,6 +56,10 @@ export function settings(): Settings {
         ppioKey: '',
         ppioModel: 'deepseek/deepseek-r1/community',
 
+        deepseekHost: 'https://api.deepseek.com',
+        deepseekKey: '',
+        deepseekModel: 'deepseek-chat',
+
         autoGenerateTitle: true,
     }
 }

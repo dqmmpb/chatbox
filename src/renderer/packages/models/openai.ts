@@ -1,6 +1,6 @@
 import { Message } from 'src/shared/types'
 import { ApiError, ChatboxAIAPIError } from './errors'
-import Base, { onResultChange } from './base'
+import Base, { ChatCompletionResponse, onResultChange } from './base'
 
 interface Options {
     openaiKey: string
@@ -30,7 +30,7 @@ export default class OpenAI extends Base {
         }
     }
 
-    async callChatCompletion(rawMessages: Message[], signal?: AbortSignal, onResultChange?: onResultChange): Promise<string> {
+    async callChatCompletion(rawMessages: Message[], signal?: AbortSignal, onResultChange?: onResultChange): Promise<ChatCompletionResponse> {
         try {
             return await this._callChatCompletion(rawMessages, signal, onResultChange)
         } catch (e) {
@@ -41,7 +41,7 @@ export default class OpenAI extends Base {
         }
     }
 
-    async _callChatCompletion(rawMessages: Message[], signal?: AbortSignal, onResultChange?: onResultChange): Promise<string> {
+    async _callChatCompletion(rawMessages: Message[], signal?: AbortSignal, onResultChange?: onResultChange): Promise<ChatCompletionResponse> {
         const model = this.options.model === 'custom-model'
             ? this.options.openaiCustomModel || ''
             : this.options.model
@@ -66,7 +66,7 @@ export default class OpenAI extends Base {
         }, signal, onResultChange)
     }
 
-    async requestChatCompletionsStream(requestBody: Record<string, any>, signal?: AbortSignal, onResultChange?: onResultChange): Promise<string> {
+    async requestChatCompletionsStream(requestBody: Record<string, any>, signal?: AbortSignal, onResultChange?: onResultChange): Promise<ChatCompletionResponse> {
         const apiPath = this.options.apiPath || '/v1/chat/completions'
         const response = await this.post(
             `${this.options.apiHost}${apiPath}`,
@@ -74,7 +74,9 @@ export default class OpenAI extends Base {
             requestBody,
             signal
         )
-        let result = ''
+        let result: ChatCompletionResponse = {
+            content: '',
+        }
         await this.handleSSE(response, (message) => {
             if (message === '[DONE]') {
                 return
@@ -83,9 +85,9 @@ export default class OpenAI extends Base {
             if (data.error) {
                 throw new ApiError(`Error from OpenAI: ${JSON.stringify(data)}`)
             }
-            const text = data.choices[0]?.delta?.content
-            if (text !== undefined) {
-                result += text
+            const content = data.choices[0]?.delta?.content
+            if (content !== undefined) {
+                result.content += content
                 if (onResultChange) {
                     onResultChange(result)
                 }
@@ -94,7 +96,7 @@ export default class OpenAI extends Base {
         return result
     }
 
-    async requestChatCompletionsNotStream(requestBody: Record<string, any>, signal?: AbortSignal, onResultChange?: onResultChange): Promise<string> {
+    async requestChatCompletionsNotStream(requestBody: Record<string, any>, signal?: AbortSignal, onResultChange?: onResultChange): Promise<ChatCompletionResponse> {
         const apiPath = this.options.apiPath || '/v1/chat/completions'
         const response = await this.post(
             `${this.options.apiHost}${apiPath}`,
@@ -106,10 +108,17 @@ export default class OpenAI extends Base {
         if (json.error) {
             throw new ApiError(`Error from OpenAI: ${JSON.stringify(json)}`)
         }
-        if (onResultChange) {
-            onResultChange(json.choices[0].message.content)
+        let result: ChatCompletionResponse = {
+            content: '',
         }
-        return json.choices[0].message.content
+        const content = json.choices[0]?.message.content
+        if (content !== undefined) {
+            result.content += content
+            if (onResultChange) {
+                onResultChange(result)
+            }
+        }
+        return result
     }
 
 

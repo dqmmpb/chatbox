@@ -16,6 +16,7 @@ export interface Message {
 
     role: MessageRole
     content: string
+    reasoning_content?: string
     name?: string
 
     cancel?: () => void
@@ -70,6 +71,7 @@ export enum ModelProvider {
     SiliconFlow = 'silicon-flow',
     LMStudio = 'lm-studio',
     PPIO = 'ppio',
+    Deepseek = 'deepseek',
 }
 
 export interface ModelSettings {
@@ -120,6 +122,11 @@ export interface ModelSettings {
     ppioHost: string
     ppioKey: string
     ppioModel: string
+
+    // deepseek
+    deepseekHost: string
+    deepseekKey: string
+    deepseekModel: string
 
     temperature: number
     topP: number

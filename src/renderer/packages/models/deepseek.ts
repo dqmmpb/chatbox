@@ -3,21 +3,21 @@ import { ApiError } from './errors'
 import Base, { ChatCompletionResponse, onResultChange } from './base'
 
 interface Options {
-    ppioKey: string
-    ppioHost: string
-    ppioModel: string
+    deepseekKey: string
+    deepseekHost: string
+    deepseekModel: string
     temperature: number
     topP: number
 }
 
-export default class PPIO extends Base {
-    public name = 'PPIO'
+export default class Deepseek extends Base {
+    public name = 'Deepseek'
 
     public options: Options
     constructor(options: Options) {
         super()
         this.options = options
-        this.options.ppioHost = this.options.ppioHost || 'https://api.ppinfra.com/v3/openai'
+        this.options.deepseekHost = this.options.deepseekHost || 'https://api.deepseek.com'
     }
 
     async callChatCompletion(
@@ -31,11 +31,11 @@ export default class PPIO extends Base {
         }))
 
         const response = await this.post(
-            `${this.options.ppioHost}/v1/chat/completions`,
+            `${this.options.deepseekHost}/chat/completions`,
             this.getHeaders(),
             {
                 messages,
-                model: this.options.ppioModel,
+                model: this.options.deepseekModel,
                 temperature: this.options.temperature,
                 top_p: this.options.topP,
                 stream: true,
@@ -52,11 +52,19 @@ export default class PPIO extends Base {
             }
             const data = JSON.parse(message)
             if (data.error) {
-                throw new ApiError(`Error from PPIO: ${JSON.stringify(data)}`)
+                throw new ApiError(`Error from Deepseek: ${JSON.stringify(data)}`)
             }
             const content = data.choices[0]?.delta?.content
+            const reasoning_content = data.choices[0]?.delta?.reasoning_content
             if (content !== undefined) {
                 result.content += content
+                if (onResultChange) {
+                    onResultChange(result)
+                }
+            }
+            if (reasoning_content !== undefined) {
+                result.reasoning_content = result.reasoning_content || ''
+                result.reasoning_content += reasoning_content
                 if (onResultChange) {
                     onResultChange(result)
                 }
@@ -66,7 +74,7 @@ export default class PPIO extends Base {
     }
 
     async listModels(): Promise<string[]> {
-        const res = await this.get(`${this.options.ppioHost}/models`, this.getHeaders())
+        const res = await this.get(`${this.options.deepseekHost}/models`, this.getHeaders())
         const json = await res.json()
         if (!json['data']) {
             throw new ApiError(JSON.stringify(json))
@@ -76,7 +84,7 @@ export default class PPIO extends Base {
 
     getHeaders() {
         const headers: Record<string, string> = {
-            Authorization: `Bearer ${this.options.ppioKey}`,
+            Authorization: `Bearer ${this.options.deepseekKey}`,
             'Content-Type': 'application/json',
         }
         return headers
