@@ -29,6 +29,12 @@ import * as dateFns from "date-fns"
 import { cn } from '@/lib/utils'
 import { estimateTokensFromMessages } from '@/packages/token'
 import { countWord } from '@/packages/word-count'
+import { styled } from '@mui/material/styles';
+
+const TypographyDiv = styled('div')(({ theme }) => ({
+    ...theme.typography.body1,
+    backgroundColor: theme.palette.background.paper,
+}));
 
 export interface Props {
     id?: string
@@ -220,19 +226,19 @@ export default function Message(props: Props) {
                             {msg.reasoning_content !== undefined && (
                                 <div>
                                     <div>{t('Thought')} {ReasoningCollapseButton}</div>
-                                    <Typography sx={{ opacity: 0.5, borderLeft: "2px solid #e5e5e5", paddingLeft: '1em'}}>
+                                    <TypographyDiv sx={{ opacity: 0.5, borderLeft: "2px solid #e5e5e5", paddingLeft: '1em'}}>
                                         {
                                             enableMarkdownRendering && !isReasoningCollapsed ? (
                                                 <Markdown>
                                                     {reasoning_content}
                                                 </Markdown>
                                             ) : !isReasoningCollapsed && (
-                                                <p>
+                                                <div>
                                                     {reasoning_content}
-                                                </p>
+                                                </div>
                                             )
                                         }
-                                    </Typography>
+                                    </TypographyDiv>
                                 </div>
                             )}
                             {
