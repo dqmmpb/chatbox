@@ -79,19 +79,16 @@ export default class SiliconFlow extends Base {
                 throw new ApiError(`Error from SiliconFlow: ${JSON.stringify(data)}`)
             }
             const content = data.choices[0]?.delta?.content
-            const reasoning_content = data.choices[0]?.delta?.reasoning_content
             if (content !== undefined) {
                 result.content += content
-                if (onResultChange) {
-                    onResultChange(result)
-                }
             }
+            const reasoning_content = data.choices[0]?.delta?.reasoning_content
             if (reasoning_content !== undefined) {
                 result.reasoning_content = result.reasoning_content || ''
                 result.reasoning_content += reasoning_content
-                if (onResultChange) {
-                    onResultChange(result)
-                }
+            }
+            if (onResultChange) {
+                onResultChange(result)
             }
         })
         return result

@@ -135,6 +135,14 @@ export default class Claude extends Base {
                     onResultChange(result)
                 }
             }
+            const reasoning_content: string = get(data, 'delta.thinking', '')
+            if (reasoning_content !== undefined) {
+                result.reasoning_content = result.reasoning_content || ''
+                result.reasoning_content += reasoning_content
+                if (onResultChange) {
+                    onResultChange(result)
+                }
+            }
         })
         return result
     }

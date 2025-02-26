@@ -61,9 +61,14 @@ export default class ChatboxAI extends Base {
             const content = data.choices[0]?.delta?.content
             if (content !== undefined) {
                 result.content += content
-                if (onResultChange) {
-                    onResultChange(result)
-                }
+            }
+            const reasoning_content = data.choices[0]?.delta?.reasoning_content
+            if (reasoning_content !== undefined) {
+                result.reasoning_content = result.reasoning_content || ''
+                result.reasoning_content += reasoning_content
+            }
+            if (onResultChange) {
+                onResultChange(result)
             }
         })
         return result

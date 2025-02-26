@@ -296,5 +296,6 @@
             "src/main/**"
         ],
         "logLevel": "quiet"
-    }
+    },
+    "packageManager": "yarn@4.5.0"
 }

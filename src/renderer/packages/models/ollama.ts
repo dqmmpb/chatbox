@@ -52,28 +52,51 @@ export default class Ollama extends Base {
         let result: ChatCompletionResponse = {
             content: '',
         }
+        let hasReasoningContent = false
         await this.handleNdjson(res, (message) => {
             const data = JSON.parse(message)
             if (data['done']) {
                 return
             }
-            const content = data['message']?.['content']
-            const reasoning_content = data['message']?.['reasoning_content']
+            let content = data['message']?.['content']
             // if (! content) {
             //     throw new ApiError(JSON.stringify(data))
             // }
+            const thinkPattern = /^<think>(.*?)<\/think>/s
+            const matches = content.match(thinkPattern)
+
+            let reasoning_content = undefined
+            if (!matches) {
+                // 处理未闭合的 think 标签情况
+                if (content.startsWith('<think>')) {
+                    hasReasoningContent = true
+                    reasoning_content = content.slice(7) // '<think>'.length === 7
+                    content = undefined
+                } else if (hasReasoningContent && !content.endsWith('</think>')) {
+                    reasoning_content = content
+                    content = undefined
+                }
+            } else {
+                reasoning_content = matches[1].trim()
+                if (reasoning_content !== undefined) {
+                    hasReasoningContent = true
+                    content = content.replace(thinkPattern, '').trim()
+                }
+            }
             if (content !== undefined) {
-                result.content += content
-                if (onResultChange) {
-                    onResultChange(result)
+                if (content.endsWith('</think>')) {
+                    hasReasoningContent = false
+                } else {
+                    result.content += content
                 }
             }
             if (reasoning_content !== undefined) {
                 result.reasoning_content = result.reasoning_content || ''
                 result.reasoning_content += reasoning_content
-                if (onResultChange) {
-                    onResultChange(result)
-                }
+            }
+
+            if (onResultChange) {
+                onResultChange(result)
             }
         })
         return result
