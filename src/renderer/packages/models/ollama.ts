@@ -79,7 +79,6 @@ export default class Ollama extends Base {
             } else {
                 reasoning_content = matches[1].trim()
                 if (reasoning_content !== undefined) {
-                    hasReasoningContent = true
                     content = content.replace(thinkPattern, '').trim()
                 }
             }
