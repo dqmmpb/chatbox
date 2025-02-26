@@ -10,7 +10,7 @@ export function useSystemLanguageWhenInit() {
                 const store = getDefaultStore()
                 const settings = store.get(settingsAtom)
                 if (!settings.languageInited) {
-                    let locale = await platform.getLocale()
+                    let locale: any = await platform.getLocale()
                     settings.language = locale
                 }
                 settings.languageInited = true
