@@ -5,6 +5,7 @@ import { parseLocale } from '@/i18n/parser'
 import Exporter from './exporter'
 
 export interface PlatformAPI {
+    exporter: any;
     getVersion(): Promise<string>;
     getPlatform(): Promise<string>;
     shouldUseDarkColors(): Promise<boolean>;
