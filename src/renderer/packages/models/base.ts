@@ -96,7 +96,6 @@ export default class Base {
             lines = lines.slice(0, -1)
             for (const line of lines) {
                 if (line.trim() !== '') {
-                    console.log(222222, line)
                     onMessage(line)
                 }
             }
